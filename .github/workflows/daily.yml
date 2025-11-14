@@ -7,12 +7,9 @@ on:
     - cron: '0 0 * * *' # Runs every day at midnight UTC
   workflow_dispatch: # Allows manual triggering of the workflow
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a one job
   main:
     runs-on: ubuntu-latest
-    # Job-level permissions configuration starts here
     permissions:                
       contents: write           # 'write' access to repository contents
 
@@ -20,28 +17,36 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Download toxic domains list
+    - name: Download all Brazil states data from IBGE
       run: |
-        mkdir sources
-        curl -o sources/stopforumspam_domains.txt https://www.stopforumspam.com/downloads/toxic_domains_whole.txt
-        curl -o sources/disposable_email_blocklist.txt https://raw.githubusercontent.com/disposable-email-domains/disposable-email-domains/master/disposable_email_blocklist.conf
-        curl -o sources/disposable_email_blocklist-2.txt https://disposable.github.io/disposable-email-domains/domains.txt
-        curl -o sources/disposable_email_blocklist-3.txt https://raw.githubusercontent.com/disposable/disposable-email-domains/master/domains.txt
+        mkdir -p raw/localities/bra/ibge
+        curl -s https://servicodados.ibge.gov.br/api/v1/localidades/estados -o raw/localities/bra/ibge/states.json
 
-    - name: Merge files
+    - name: Download and merge IBGE cities data for all states
       run: |
-        cat sources/*.txt > daily_email_blocklist.txt
-  
-    - name: Remove duplicate lines
-      run: |
-        sort daily_email_blocklist.txt | uniq > disposable_email_domains_blocklist.txt
+        mkdir -p raw/localities/bra/ibge
+        SIGLAS=$(jq -r '.[].sigla' raw/localities/bra/ibge/states.json)
+        echo "[" > raw/localities/bra/ibge/cities.json
+        FIRST=true
+        for UF in $SIGLAS; do
+          DATA=$(curl -s "https://servicodados.ibge.gov.br/api/v1/localidades/estados/${UF}/municipios")
+          if [ "$FIRST" = true ]; then
+            FIRST=false
+          else
+            echo "," >> raw/localities/bra/ibge/cities.json
+          fi
+          echo "$DATA" | jq -c '.[]' >> raw/localities/bra/ibge/cities.json
+        done
+        echo "]" >> raw/localities/bra/ibge/cities.json
 
     - name: Commit changes
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
-        git add disposable_email_domains_blocklist.txt
+        git add raw/localities/bra/ibge/cities.json
+        git add raw/localities/bra/ibge/states.json
         git commit -m 'Daily merge of disposable email sources'
+        
     - name: Push changes
       uses: ad-m/github-push-action@master
       with:
