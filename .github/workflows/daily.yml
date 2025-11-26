@@ -45,7 +45,11 @@ jobs:
         git config --local user.name "github-actions[bot]"
         git add raw/localities/bra/ibge/cities.json
         git add raw/localities/bra/ibge/states.json
-        git commit -m 'Daily merge of disposable email sources'
+        if ! git diff --cached --quiet; then
+          git commit -m 'Merge of new localities'
+        else
+          echo "No changes to commit."
+        fi
         
     - name: Push changes
       uses: ad-m/github-push-action@master
