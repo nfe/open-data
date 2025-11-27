@@ -25,7 +25,7 @@ jobs:
     - name: Download and merge IBGE cities data for all states
       run: |
         mkdir -p raw/localities/bra/ibge
-        SIGLAS=$(jq -r '.[].sigla' raw/localities/bra/ibge/states.json)
+        SIGLAS=$(jq -r '.[].sigla' raw/localities/bra/ibge/states.json | sort)
         echo "[" > raw/localities/bra/ibge/cities.json
         FIRST=true
         for UF in $SIGLAS; do
