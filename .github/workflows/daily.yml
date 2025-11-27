@@ -32,6 +32,11 @@ jobs:
         DATA=$(cat raw/localities/bra/ibge/cities.json | jq -c -s 'flatten(1) | sort_by(.id)' | sort)
         echo "$DATA" > raw/localities/bra/ibge/cities.json
 
+    - name: Download the Excel file of PGE SIAFI
+      run: |
+        mkdir -p raw/localities/bra/siafi
+        curl -L -o raw/localities/bra/siafi/pge_siafi.xls https://thot-arquivos.tesouro.gov.br/publicacao/28259
+
     - name: Commit changes
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
