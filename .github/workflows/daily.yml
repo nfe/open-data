@@ -24,20 +24,13 @@ jobs:
 
     - name: Download and merge IBGE cities data for all states
       run: |
-        mkdir -p raw/localities/bra/ibge
         SIGLAS=$(jq -r '.[].sigla' raw/localities/bra/ibge/states.json | sort)
-        echo "[" > raw/localities/bra/ibge/cities.json
-        FIRST=true
+        echo "" > raw/localities/bra/ibge/cities.json
         for UF in $SIGLAS; do
-          DATA=$(curl -s "https://servicodados.ibge.gov.br/api/v1/localidades/estados/${UF}/municipios")
-          if [ "$FIRST" = true ]; then
-            FIRST=false
-          else
-            echo "," >> raw/localities/bra/ibge/cities.json
-          fi
-          echo "$DATA" | jq -c '.[]' >> raw/localities/bra/ibge/cities.json
+            echo $(curl -s "https://servicodados.ibge.gov.br/api/v1/localidades/estados/${UF}/municipios") >> raw/localities/bra/ibge/cities.json
         done
-        echo "]" >> raw/localities/bra/ibge/cities.json
+        DATA=$(cat raw/localities/bra/ibge/cities.json | jq -c -s 'flatten(1) | sort_by(.id)' | sort)
+        echo "$DATA" > raw/localities/bra/ibge/cities.json
 
     - name: Commit changes
       run: |
