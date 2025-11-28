@@ -40,6 +40,7 @@ jobs:
     - name: PGE_SIAFI > Convert Excel to JSON
       run: |
         pip install pandas
+        pip install xlrd
         python convert_siafi_to_json.py
 
     - name: Commit changes
