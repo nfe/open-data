@@ -17,12 +17,12 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Download all Brazil states data from IBGE
+    - name: IBGE States > Download states raw data
       run: |
         mkdir -p raw/localities/bra/ibge
         curl -s https://servicodados.ibge.gov.br/api/v1/localidades/estados -o raw/localities/bra/ibge/states.json
 
-    - name: Download and merge IBGE cities data for all states
+    - name: IBGE Cities > Download and merge cities raw data for each state
       run: |
         SIGLAS=$(jq -r '.[].sigla' raw/localities/bra/ibge/states.json | sort)
         echo "" > raw/localities/bra/ibge/cities.json
@@ -32,10 +32,15 @@ jobs:
         DATA=$(cat raw/localities/bra/ibge/cities.json | jq -c -s 'flatten(1) | sort_by(.id)' | sort)
         echo "$DATA" > raw/localities/bra/ibge/cities.json
 
-    - name: Download the Excel file of PGE SIAFI
+    - name: PGE_SIAFI > Download the raw file
       run: |
         mkdir -p raw/localities/bra/siafi
         curl -L -o raw/localities/bra/siafi/pge_siafi.xls https://thot-arquivos.tesouro.gov.br/publicacao/28259
+
+    - name: PGE_SIAFI > Convert Excel to JSON
+      run: |
+        pip install pandas
+        python raw/localities/bra/siafi/convert_siafi_to_json.py
 
     - name: Commit changes
       run: |
